@@ -4,6 +4,56 @@ import Util from './Util';
 let scrollTimer = null;
 
 export default class EPub extends _EPub {
+  static calcWordCount() {
+    return document.body.textContent.split(this.getSplitWordRegex()).length;
+  }
+
+  static calcWordCountBetweenNodeLocation(firstNodeIndex = -1,
+          firstWordIndex = -1, lastNodeIndex = -1, lastWordIndex = -1) {
+    const nodes = this.getTextAndImageNodes();
+    if (nodes === null) {
+      throw 'tts: nodes is empty. make call epub.getTextAndImageNodes().';
+    }
+
+    const _firstNodeIndex = Math.max(firstNodeIndex, 0);
+    const _firstWordIndex = Math.max(firstWordIndex, 0);
+    const _lastNodeIndex = Math.max(lastNodeIndex, 0);
+    const _lastWordIndex = Math.max(lastWordIndex, 0);
+
+    let wordCount = 0;
+    for (let i = _firstNodeIndex; i < _lastNodeIndex; i++) {
+      const node = nodes[i];
+      if (!node || !(node.nodeValue)) {
+        continue;
+      }
+      wordCount += node.nodeValue.split(this.getSplitWordRegex()).length;
+    }
+    wordCount -= firstWordIndex;
+    wordCount += lastWordIndex;
+    return wordCount;
+  }
+
+  static calcRemainWordCount(nodeIndex = -1, wordIndex = -1) {
+    const nodes = this.getTextAndImageNodes();
+    if (nodes === null) {
+      throw 'tts: nodes is empty. make call epub.getTextAndImageNodes().';
+    }
+
+    const _nodeIndex = Math.max(nodeIndex, 0);
+    const _wordIndex = Math.max(wordIndex, 0);
+
+    let wordCount = 0;
+    for (let i = _nodeIndex; i < nodes.length; i++) {
+      const node = nodes[i];
+      if (!node || !(node.nodeValue)) {
+        continue;
+      }
+      wordCount += node.nodeValue.split(this.getSplitWordRegex()).length;
+    }
+    wordCount -= wordIndex;
+    return wordCount;
+  }
+
   static calcPageCount(columnWidth) {
     if (app.scrollMode) {
       return Math.round(this.getTotalHeight() / app.pageHeightUnit);
@@ -145,14 +195,31 @@ export default class EPub extends _EPub {
 
     const result =
       this.findTopNodeRectAndLocationOfCurrentPage(startOffset, endOffset, posSeparator);
+    const next =
+      this.findTopNodeRectAndLocationOfCurrentPage(endOffset, endOffset + app.pageUnit, posSeparator);
     if (!result) {
       android.onTopNodeLocationOfCurrentPageNotFound();
       return;
     }
+    let wordCount = 0;
+    if (!next) {
+      wordCount =
+          this.calcRemainWordCount(parseInt(result.location.split(posSeparator)[0], 10),
+                  parseInt(result.location.split(posSeparator)[1], 10));
+    } else {
+      wordCount =
+          this.calcWordCountBetweenNodeLocation(parseInt(result.location.split(posSeparator)[0], 10),
+                  parseInt(result.location.split(posSeparator)[1], 10),
+                  parseInt(next.location.split(posSeparator)[0], 10),
+                  parseInt(next.location.split(posSeparator)[1], 10));
+    }
+    const remainWordCount =
+        this.calcRemainWordCount(parseInt(result.location.split(posSeparator)[0], 10),
+                parseInt(result.location.split(posSeparator)[1], 10));
 
     this.showTopNodeLocation(result);
 
-    android.onTopNodeLocationOfCurrentPageFound(result.location);
+    android.onTopNodeLocationOfCurrentPageFound(result.location, wordCount, remainWordCount);
   }
 
   static getScrollYOffsetFromTopNodeLocation(nodeIndex, wordIndex) {
