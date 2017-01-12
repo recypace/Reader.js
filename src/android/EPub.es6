@@ -12,13 +12,11 @@ export default class EPub extends _EPub {
           firstWordIndex = -1, lastNodeIndex = -1, lastWordIndex = -1) {
     const nodes = this.getTextAndImageNodes();
     if (nodes === null) {
-      throw 'tts: nodes is empty. make call epub.getTextAndImageNodes().';
+      throw new Error('tts: nodes is empty. make call epub.getTextAndImageNodes().');
     }
 
     const _firstNodeIndex = Math.max(firstNodeIndex, 0);
-    const _firstWordIndex = Math.max(firstWordIndex, 0);
     const _lastNodeIndex = Math.max(lastNodeIndex, 0);
-    const _lastWordIndex = Math.max(lastWordIndex, 0);
 
     let wordCount = 0;
     for (let i = _firstNodeIndex; i < _lastNodeIndex; i++) {
@@ -36,11 +34,10 @@ export default class EPub extends _EPub {
   static calcRemainWordCount(nodeIndex = -1, wordIndex = -1) {
     const nodes = this.getTextAndImageNodes();
     if (nodes === null) {
-      throw 'tts: nodes is empty. make call epub.getTextAndImageNodes().';
+      throw new Error('tts: nodes is empty. make call epub.getTextAndImageNodes().');
     }
 
     const _nodeIndex = Math.max(nodeIndex, 0);
-    const _wordIndex = Math.max(wordIndex, 0);
 
     let wordCount = 0;
     for (let i = _nodeIndex; i < nodes.length; i++) {
